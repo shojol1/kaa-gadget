@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="bn" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>অর্পিত সম্পত্তি ডাটাবেইজ ও অনুসন্ধান সিস্টেম | উপজেলা ভূমি অফিস</title>
+    <meta name="description" content="ইউনিয়ন, মৌজা, এস.এ ও আর.এস দাগ এবং খতিয়ান নম্বর দিয়ে অর্পিত সম্পত্তি (ভিপি কেস) রেকর্ড অনুসন্ধানের আধুনিক সিস্টেম।">
+    
+    <!-- Firebase Compat SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+    <!-- RemixIcon & Fonts -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css">
+    <link rel="stylesheet" href="https://fonts.maateen.me/kalpurush/font.css">
+    <link rel="stylesheet" href="https://fonts.maateen.me/solaiman-lipi/font.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Main Web App Container (Hidden when logged out) -->
+    <div class="container" style="display: none;">
+        
+        <!-- Header Section -->
+        <header>
+            <div class="brand-wrapper">
+                <div class="brand-icon">
+                    <i class="ri-government-line"></i>
+                </div>
+                <div>
+                    <h1 class="brand-title">অর্পিত সম্পত্তি ডাটাবেইজ ও অনুসন্ধান সিস্টেম</h1>
+                    <p class="brand-subtitle">উপজেলা ভূমি অফিস, সিরাজদিখান, মুন্সীগঞ্জ | ডিজিটাল ভিপি খতিয়ান ও দাগ সার্চ পোর্টাল</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <!-- User Profile & Avatar Badge Container -->
+                <div id="headerUserBadgeContainer"></div>
+
+                <button class="theme-toggle-btn" id="themeToggleBtn" title="থিম পরিবর্তন করুন">
+                    <i class="ri-moon-line"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- KPI Dashboard Summary Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon green">
+                    <i class="ri-building-line"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">মোট ইউনিয়ন</span>
+                    <div class="stat-value" id="statUnions">১০ টি</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon cyan">
+                    <i class="ri-map-2-line"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">মোট মৌজা</span>
+                    <div class="stat-value" id="statMouzas">-</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon purple">
+                    <i class="ri-file-list-3-line"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">মোট ভিপি রেকর্ড</span>
+                    <div class="stat-value" id="statRecords">-</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon amber">
+                    <i class="ri-landscape-line"></i>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-label">মোট জমির পরিমাণ</span>
+                    <div class="stat-value" id="statArea">-</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search & Custom Filters Panel -->
+        <div class="search-panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <i class="ri-search-eye-line"></i> ইউনিয়ন ➜ মৌজা ➜ দাগ সার্চ ও স্মার্ট ফিল্টার
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-outline-danger" id="btnReset">
+                        <i class="ri-refresh-line"></i> ফিল্টার রিসেট
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 1, 2, 3: Hierarchy Search (Union -> Mouza -> Dag) -->
+            <div class="hierarchy-search-grid">
+                <!-- Union Dropdown -->
+                <div class="form-group">
+                    <label class="form-label" for="filterUnion">
+                        <i class="ri-government-line"></i> ১. ইউনিয়ন সিলেক্ট করুন
+                    </label>
+                    <select class="form-select" id="filterUnion">
+                        <option value="">সকল ইউনিয়ন (All Unions)</option>
+                    </select>
+                </div>
+
+                <!-- Mouza Dropdown -->
+                <div class="form-group">
+                    <label class="form-label" for="filterMouza">
+                        <i class="ri-map-pin-line"></i> ২. মৌজা সিলেক্ট করুন
+                    </label>
+                    <select class="form-select" id="filterMouza">
+                        <option value="">সকল মৌজা (All Mouzas)</option>
+                    </select>
+                </div>
+
+                <!-- Dedicated Dag Search Box with SA / RS Toggle -->
+                <div class="dag-search-wrapper">
+                    <div class="dag-header-flex">
+                        <label class="form-label" for="searchDag" style="margin-bottom:0;">
+                            <i class="ri-hashtag"></i> ৩. দাগ নম্বর দিয়ে খুঁজুন
+                        </label>
+                        <div class="dag-toggle-group">
+                            <button type="button" class="dag-toggle-btn active" id="dagToggleBoth">উভয় দাগ</button>
+                            <button type="button" class="dag-toggle-btn" id="dagToggleSA">এস.এ দাগ</button>
+                            <button type="button" class="dag-toggle-btn" id="dagToggleRS">আর.এস দাগ</button>
+                        </div>
+                    </div>
+                    <div class="input-with-icon">
+                        <i class="ri-search-2-line"></i>
+                        <input type="text" class="form-input" id="searchDag" placeholder="দাগ নম্বর লিখুন (যেমন: ১২৩ বা 123)...">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Secondary Multi-criteria Filters -->
+            <div class="secondary-filters-grid">
+                <div class="form-group">
+                    <label class="form-label" for="searchGlobal">
+                        <i class="ri-user-search-line"></i> লীজি / মালিকের নাম / ঠিকানা
+                    </label>
+                    <input type="text" class="form-input" id="searchGlobal" placeholder="নাম বা ঠিকানা লিখুন...">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="filterCaseNo">
+                        <i class="ri-folder-keyhole-line"></i> ভিপি কেস নম্বর
+                    </label>
+                    <input type="text" class="form-input" id="filterCaseNo" placeholder="কেস নং লিখুন (যেমন: ৯৬/৮০)...">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="filterLandType">
+                        <i class="ri-plant-line"></i> জমির রকম / শ্রেণী
+                    </label>
+                    <select class="form-select" id="filterLandType">
+                        <option value="">সকল শ্রেণী (All Types)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="filterYear">
+                        <i class="ri-calendar-check-line"></i> সর্বশেষ পরিশোধের সন
+                    </label>
+                    <select class="form-select" id="filterYear">
+                        <option value="">সকল সন (All Years)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Sorting Toolbar -->
+            <div class="filter-actions-toolbar">
+                <div class="sort-group">
+                    <span class="form-label" style="margin-bottom:0;"><i class="ri-sort-asc"></i> সর্টিং:</span>
+                    <select class="form-select" id="sortField" style="width: 180px;">
+                        <option value="id">ক্রমানুসারে (ID)</option>
+                        <option value="union">ইউনিয়ন</option>
+                        <option value="mouza">মৌজা</option>
+                        <option value="caseNo">কেস নম্বর</option>
+                        <option value="landArea">জমির পরিমাণ</option>
+                        <option value="lastPaymentYear">পরিশোধের সন</option>
+                        <option value="lesseeInfo">লীজির নাম</option>
+                    </select>
+                    <button class="btn btn-secondary" id="sortDirBtn" title="সর্টিং ডিরেকশন পরিবর্তন">
+                        <i class="ri-sort-asc"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search Results Header & Table -->
+        <div class="results-header">
+            <div class="results-count-text">
+                অনুসন্ধানের ফলাফল: <span class="results-count-badge" id="resultsCount">0</span> টি রেকর্ড
+            </div>
+            <div class="page-size-selector">
+                <label for="pageSizeSelect">প্রতি পৃষ্ঠায় দেখুন:</label>
+                <select id="pageSizeSelect">
+                    <option value="10">১০ টি</option>
+                    <option value="25" selected>২৫ টি</option>
+                    <option value="50">৫০ টি</option>
+                    <option value="100">১০০ টি</option>
+                    <option value="250">২৫০ টি</option>
+                    <option value="all">সবগুলো (All)</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Table View -->
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th style="width: 60px;"># ID</th>
+                        <th>ইউনিয়ন</th>
+                        <th>মৌজা</th>
+                        <th>ভিপি কেস নম্বর</th>
+                        <th>লীজি / ইজারা গ্রহীতার নাম ও ঠিকানা</th>
+                        <th>এস.এ খতিয়ান / দাগ</th>
+                        <th>আর.এস খতিয়ান / দাগ</th>
+                        <th>শ্রেণী</th>
+                        <th>পরিমাণ (একর)</th>
+                        <th>সর্বশেষ পরিশোধ</th>
+                        <th style="width: 80px;">অ্যাকশন</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <!-- Dynamic Table Content -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div class="pagination-wrapper">
+            <div id="paginationInfo" style="font-size: 0.9rem; color: var(--text-secondary);"></div>
+            <div class="pagination-controls" id="paginationControls"></div>
+        </div>
+
+    </div>
+
+    <!-- Full-Screen Authentication Modal Overlay -->
+    <div class="auth-modal-overlay active" id="authModalOverlay">
+        <div class="auth-modal-card">
+            <div class="auth-card-header">
+                <div class="auth-icon-shield">
+                    <i class="ri-shield-keyhole-line"></i>
+                </div>
+                <h2 class="auth-card-title">অর্পিত সম্পত্তি ডাটাবেইজ পোর্টাল</h2>
+                <p class="auth-card-sub">লগইন করতে মোবাইল নম্বর প্রদান করুন</p>
+            </div>
+
+            <!-- Error Alert -->
+            <div class="auth-error-alert" id="authErrorMessage" style="display: none;"></div>
+
+            <!-- STEP 1: Mobile Number Input -->
+            <div class="auth-step-panel" id="authStepPhone">
+                <div class="form-group">
+                    <label class="form-label" for="authPhoneInput">
+                        <i class="ri-phone-line"></i> মোবাইল নম্বর লিখুন
+                    </label>
+                    <div class="input-with-icon">
+                        <i class="ri-smartphone-line"></i>
+                        <input type="text" class="form-input" id="authPhoneInput" placeholder="017XXXXXXXX" maxlength="11">
+                    </div>
+                </div>
+                <button type="button" class="btn btn-primary btn-block" id="btnSubmitPhone" style="margin-top: 20px;">
+                    পরবর্তী <i class="ri-arrow-right-line"></i>
+                </button>
+            </div>
+
+            <!-- STEP 2: OTP Verification -->
+            <div class="auth-step-panel" id="authStepOTP" style="display: none;">
+                <p style="text-align: center; color: var(--text-secondary); margin-bottom: 16px; font-size: 0.92rem;">
+                    <span id="otpPhoneDisplay" style="font-weight: 700; color: var(--primary);"></span> নম্বরে পাঠানো ৪ ডিজিটের OTP লিখুন
+                </p>
+
+                <div class="otp-digits-flex">
+                    <input type="text" maxlength="1" class="otp-digit-input" autofocus>
+                    <input type="text" maxlength="1" class="otp-digit-input">
+                    <input type="text" maxlength="1" class="otp-digit-input">
+                    <input type="text" maxlength="1" class="otp-digit-input">
+                </div>
+
+                <div style="text-align: center; margin-top: 14px; font-size: 0.88rem;">
+                    <span id="otpTimerText" style="color: var(--text-muted);">(৬০ সেকেন্ড পর রিকুয়েস্ট করতে পারবেন)</span>
+                    <button type="button" class="btn-link" id="btnResendOTP" style="display: none;">পুনরায় OTP পাঠান</button>
+                </div>
+
+                <button type="button" class="btn btn-primary btn-block" id="btnVerifyOTP" style="margin-top: 20px;">
+                    যাচাই করুন <i class="ri-checkbox-circle-line"></i>
+                </button>
+            </div>
+
+            <!-- STEP 3: Set 4-Digit PIN -->
+            <div class="auth-step-panel" id="authStepSetPIN" style="display: none;">
+                <p style="text-align: center; color: var(--primary); font-weight: 600; margin-bottom: 16px;">
+                    ভবিষ্যতে দ্রুত লগইনের জন্য ৪ ডিজিটের পিন সেট করুন
+                </p>
+
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label class="form-label">৪ ডিজিটের পিন লিখুন</label>
+                    <div class="pin-digits-flex" id="pinSetContainer">
+                        <input type="password" maxlength="1" class="pin-digit-input" autofocus>
+                        <input type="password" maxlength="1" class="pin-digit-input">
+                        <input type="password" maxlength="1" class="pin-digit-input">
+                        <input type="password" maxlength="1" class="pin-digit-input">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">পুনরায় পিন নিশ্চিত করুন</label>
+                    <div class="pin-digits-flex" id="pinConfirmContainer">
+                        <input type="password" maxlength="1" class="pin-digit-input">
+                        <input type="password" maxlength="1" class="pin-digit-input">
+                        <input type="password" maxlength="1" class="pin-digit-input">
+                        <input type="password" maxlength="1" class="pin-digit-input">
+                    </div>
+                </div>
+
+                <button type="button" class="btn btn-primary btn-block" id="btnSavePIN" style="margin-top: 24px;">
+                    পিন সেট করুন ও প্রজেক্ট খুলুন <i class="ri-check-double-line"></i>
+                </button>
+            </div>
+
+            <!-- STEP 4: PIN Entry Login -->
+            <div class="auth-step-panel" id="authStepEnterPIN" style="display: none;">
+                <p style="text-align: center; color: var(--text-secondary); margin-bottom: 16px;">
+                    মোবাইল নম্বর: <span id="pinLoginPhoneDisplay" style="font-weight: 700; color: var(--text-primary);"></span>
+                </p>
+
+                <div class="form-group">
+                    <label class="form-label" style="justify-content: center;">৪ ডিজিটের পিন নম্বর লিখুন</label>
+                    <div class="pin-digits-flex" id="pinLoginContainer">
+                        <input type="password" maxlength="1" class="pin-digit-input" autofocus>
+                        <input type="password" maxlength="1" class="pin-digit-input">
+                        <input type="password" maxlength="1" class="pin-digit-input">
+                        <input type="password" maxlength="1" class="pin-digit-input">
+                    </div>
+                </div>
+
+                <div style="text-align: right; margin-top: 10px;">
+                    <a href="#" class="btn-link" id="linkForgotPIN">পিন ভুলে গেছেন?</a>
+                </div>
+
+                <button type="button" class="btn btn-primary btn-block" id="btnLoginPIN" style="margin-top: 20px;">
+                    লগইন করুন <i class="ri-login-box-line"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Edit Modal -->
+    <div class="modal-overlay" id="profileModalOverlay">
+        <div class="modal-card" style="max-width: 580px;">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <i class="ri-user-settings-line" style="color: var(--primary);"></i> প্রোফাইল আপডেট
+                </div>
+                <button class="modal-close-btn" id="profileCloseBtn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label class="form-label">মোবাইল নম্বর</label>
+                    <input type="text" class="form-input" id="profilePhoneInput" readonly style="opacity: 0.7; cursor: not-allowed;">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label class="form-label">আপনার নাম</label>
+                    <input type="text" class="form-input" id="profileNameInput" placeholder="আপনার নাম লিখুন...">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 18px;">
+                    <label class="form-label">ঠিকানা</label>
+                    <input type="text" class="form-input" id="profileAddressInput" placeholder="আপনার ঠিকানা লিখুন...">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">অ্যাভাটার নির্বাচন করুন</label>
+                    <div class="profile-avatar-grid" id="profileAvatarGrid">
+                        <!-- Dynamic Avatars -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="btnSaveProfile">
+                    <i class="ri-save-line"></i> সংরক্ষণ করুন
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Control Panel Modal -->
+    <div class="modal-overlay" id="adminModalOverlay">
+        <div class="modal-card" style="max-width: 780px;">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <i class="ri-shield-user-line" style="color: var(--warning);"></i> অ্যাডমিন কন্ট্রোল প্যানেল (ইউজার ডাটাবেইজ)
+                </div>
+                <button class="modal-close-btn" id="adminCloseBtn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Analytics Cards -->
+                <div class="stats-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 20px;">
+                    <div class="stat-card" style="padding: 14px 18px;">
+                        <div class="stat-icon green" style="width: 40px; height: 40px; font-size: 18px;"><i class="ri-group-line"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-label">মোট ইউজার</span>
+                            <div class="stat-value" id="adminStatTotal" style="font-size: 1.2rem;">0</div>
+                        </div>
+                    </div>
+                    <div class="stat-card" style="padding: 14px 18px;">
+                        <div class="stat-icon cyan" style="width: 40px; height: 40px; font-size: 18px;"><i class="ri-user-check-line"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-label">সক্রিয় ইউজার</span>
+                            <div class="stat-value" id="adminStatActive" style="font-size: 1.2rem;">0</div>
+                        </div>
+                    </div>
+                    <div class="stat-card" style="padding: 14px 18px;">
+                        <div class="stat-icon amber" style="width: 40px; height: 40px; font-size: 18px;"><i class="ri-user-unfollow-line"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-label">নিষ্ক্রিয় ইউজার</span>
+                            <div class="stat-value" id="adminStatInactive" style="font-size: 1.2rem;">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User Table -->
+                <div class="table-responsive" style="max-height: 380px; overflow-y: auto;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ব্যবহারকারী (ফোন/নাম)</th>
+                                <th>রোল</th>
+                                <th>স্ট্যাটাস</th>
+                                <th>শেষ অ্যাক্টিভ সময়</th>
+                                <th>অ্যাকশন</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminUserTableBody">
+                            <!-- Dynamic User Rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Record Detail Modal / Popup -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <i class="ri-article-line" style="color: var(--primary);"></i> সম্পূর্ণ অর্পিত সম্পত্তি রেকর্ড বিস্তারিত
+                </div>
+                <button class="modal-close-btn" id="modalCloseBtn">&times;</button>
+            </div>
+            <div class="modal-body" id="modalContent">
+                <!-- Dynamic Modal Content -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="modalCopyBtn">
+                    <i class="ri-file-copy-line"></i> কপি করুন
+                </button>
+                <button class="btn btn-primary" id="modalPrintBtn">
+                    <i class="ri-printer-line"></i> প্রিন্ট করুন
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">বার্তা</div>
+
+    <!-- Load Dataset & Auth Scripts -->
+    <script src="data.js"></script>
+    <script src="auth.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
