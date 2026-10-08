@@ -1148,3 +1148,76 @@ header {
     font-size: 24px;
 }
 
+/* Professional Full-Screen App Loading Overlay */
+.app-loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(15, 23, 42, 0.96);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    z-index: 99999999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.app-loading-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.app-loading-card {
+    background: rgba(30, 41, 59, 0.85);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    border-radius: 24px;
+    padding: 40px 48px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    max-width: 90%;
+    width: 380px;
+    transform: translateY(0);
+    animation: loadingCardPop 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes loadingCardPop {
+    from { opacity: 0; transform: scale(0.92) translateY(10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.loading-spinner-ring {
+    width: 56px;
+    height: 56px;
+    border: 4px solid rgba(16, 185, 129, 0.15);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: appSpinnerSpin 0.8s linear infinite;
+}
+
+@keyframes appSpinnerSpin {
+    to { transform: rotate(360deg); }
+}
+
+.loading-logo {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.loading-text {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+

@@ -18,6 +18,15 @@
 </head>
 <body>
 
+    <!-- Professional Full-Screen App Loading Overlay -->
+    <div class="app-loading-overlay active" id="appLoadingOverlay">
+        <div class="app-loading-card">
+            <div class="loading-spinner-ring"></div>
+            <div class="loading-logo">🏛️ স্মার্ট কেস বিডি</div>
+            <div class="loading-text">সিস্টেম লোড হচ্ছে, অনুগ্রহ করে অপেক্ষা করুন...</div>
+        </div>
+    </div>
+
     <!-- Main Web App Container (Hidden when logged out) -->
     <div class="container" style="display: none;">
         
@@ -245,7 +254,7 @@
     </div>
 
     <!-- Full-Screen Authentication Modal Overlay -->
-    <div class="auth-modal-overlay active" id="authModalOverlay">
+    <div class="auth-modal-overlay" id="authModalOverlay">
         <div class="auth-modal-card">
             <div class="auth-card-header">
                 <div class="auth-icon-shield">

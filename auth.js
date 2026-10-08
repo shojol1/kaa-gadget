@@ -194,6 +194,24 @@
         }
     }
 
+    function hideAppLoader() {
+        const loader = document.getElementById('appLoadingOverlay');
+        if (loader) {
+            loader.style.opacity = '0';
+            setTimeout(() => {
+                loader.classList.remove('active');
+                loader.style.opacity = '';
+            }, 300);
+        }
+    }
+
+    function showAppLoader() {
+        const loader = document.getElementById('appLoadingOverlay');
+        if (loader) {
+            loader.classList.add('active');
+        }
+    }
+
     function setLoggedInSession(userData) {
         userData.lastActive = new Date().toISOString();
         localStorage.setItem('vested_auth_session', JSON.stringify(userData));
@@ -201,13 +219,29 @@
         updateHeaderUserBadge(userData);
         hideAuthModal();
         showMainAppContent();
+        hideAppLoader();
         resetInactivityTimer();
     }
 
     function logoutUser(reason = 'লগআউট সফল হয়েছে') {
         localStorage.removeItem('vested_auth_session');
-        showAuthModal();
+        
+        currentAuthFlow = {
+            phone: '',
+            normalizedPhone: '',
+            otp: '',
+            userExist: false,
+            isResetPin: false,
+            timerInterval: null
+        };
+
+        const inputPhone = document.getElementById('authPhoneInput');
+        if (inputPhone) inputPhone.value = '';
+
         hideMainAppContent();
+        showAuthStep('authStepPhone');
+        showAuthModal();
+        hideAppLoader();
         showToast(reason);
     }
 
@@ -653,6 +687,11 @@
             hideAuthModal();
             showMainAppContent();
 
+            // Smoothly hide loading overlay after initial render
+            setTimeout(() => {
+                hideAppLoader();
+            }, 300);
+
             // Check user status & sync fresh role/profile from Firestore asynchronously
             getFirestoreUser(loggedInUser.phone).then(u => {
                 if (u && u.status === 'inactive') {
@@ -664,9 +703,10 @@
                 }
             });
         } else {
-            showAuthModal();
             hideMainAppContent();
             showAuthStep('authStepPhone');
+            showAuthModal();
+            hideAppLoader();
         }
 
         // STEP 1: Phone Submission
