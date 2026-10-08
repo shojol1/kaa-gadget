@@ -794,26 +794,40 @@
             btnSavePIN.disabled = true;
             btnSavePIN.textContent = 'সংরক্ষণ হচ্ছে...';
 
+            // Fetch existing user data if user already exists
+            const existingUser = await getFirestoreUser(currentAuthFlow.phone);
             const isAdmin = ADMIN_PHONES.includes(currentAuthFlow.phone);
 
-            const newUser = {
-                phone: currentAuthFlow.phone,
-                pin: pin,
-                name: 'ব্যবহারকারী (' + toBengaliDigits(currentAuthFlow.phone) + ')',
-                address: 'সিরাজদিখান, মুন্সীগঞ্জ',
-                avatar: 'avatar1',
-                role: isAdmin ? 'admin' : 'user',
-                status: 'active',
-                createdAt: new Date().toISOString()
-            };
+            let userToSave;
+            if (existingUser) {
+                // Preserve all existing profile details, avatar, and admin role
+                userToSave = {
+                    ...existingUser,
+                    pin: pin,
+                    role: (existingUser.role === 'admin' || isAdmin) ? 'admin' : (existingUser.role || 'user'),
+                    updatedAt: new Date().toISOString()
+                };
+            } else {
+                // New registration initial setup
+                userToSave = {
+                    phone: currentAuthFlow.phone,
+                    pin: pin,
+                    name: 'ব্যবহারকারী (' + toBengaliDigits(currentAuthFlow.phone) + ')',
+                    address: 'সিরাজদিখান, মুন্সীগঞ্জ',
+                    avatar: 'avatar1',
+                    role: isAdmin ? 'admin' : 'user',
+                    status: 'active',
+                    createdAt: new Date().toISOString()
+                };
+            }
 
-            await saveFirestoreUser(newUser);
+            await saveFirestoreUser(userToSave);
 
             btnSavePIN.disabled = false;
             btnSavePIN.textContent = 'পিন সেট করুন ও প্রজেক্ট খুলুন';
 
             showToast('পিন সফলভাবে সংরক্ষণ করা হয়েছে!');
-            setLoggedInSession(newUser);
+            setLoggedInSession(userToSave);
         };
 
         // STEP 4: Login with PIN
